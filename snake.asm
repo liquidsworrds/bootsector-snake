@@ -288,7 +288,6 @@ game_over:
 reset:
     xor ah, ah
     int 16h  ; Gets keyboard input
-
     int 19h  ; Reboots qemu
 
 ; Bootsector
