@@ -4,7 +4,7 @@ jmp game_setup
 
 ; Constants
 TIMER       equ 0x046C
-VIDMEM      equ 0xb8000
+VIDMEM      equ 0xb800
 SCREENW     equ 80
 SCREENH     equ 25
 WINCOND     equ 10
@@ -33,7 +33,7 @@ game_setup:
     mov ax, VIDMEM
     mov es, ax      ; ES:DI <- video memory
     
-    mox ax, [playerX]
+    mov ax, [playerX]
     mov word [SNAKEARRAYX], ax
     mov ax, [playerY]
     mov word [SNAKEARRAYY], ax
@@ -49,6 +49,19 @@ game_loop:
 
     
     ; Draw Snake 
+    xor bx, bx
+    mov cx, [snakeLength]
+    mov ax, SNAKECOLOR
+    .snake_loop:
+        imul di, [SNAKEARRAYY+bx], SCREENW*2    ; VGA text mode -> 1 byte = fg and bg color 1 byte = char
+        imul dx, [SNAKEARRAYX+bx], 2
+        add di, dx
+        stosw
+        add bx, 2
+    loop .snake_loop
+        
+
+     
 
 
     jmp game_loop
