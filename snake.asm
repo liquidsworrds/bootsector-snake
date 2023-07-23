@@ -177,33 +177,33 @@ game_loop:
         xor ah, ah
         int 16h ; ah has the scancode and al has the ascii char
 
-        cmp al, 'h'
-        je h_pressed
+        cmp al, 'w'
+        je w_pressed
 
-        cmp al, 'j'
-        je j_pressed
+        cmp al, 'a'
+        je a_pressed
 
-        cmp al, 'k' 
-        je k_pressed
+        cmp al, 's' 
+        je s_pressed
 
-        cmp al, 'l'
-        je l_pressed
+        cmp al, 'd'
+        je d_pressed
 
         jmp check_apple
 
-        h_pressed:
-            mov bl, LEFT
-            jmp check_apple
-
-        j_pressed:
-            mov bl, DOWN
-            jmp check_apple
-
-        k_pressed:
+        w_pressed:
             mov bl, UP
             jmp check_apple
 
-        l_pressed:
+        a_pressed:
+            mov bl, LEFT
+            jmp check_apple
+
+        s_pressed:
+            mov bl, DOWN
+            jmp check_apple
+
+        d_pressed:
             mov bl, RIGHT
             jmp check_apple
 
