@@ -7,7 +7,7 @@ TIMER       equ 046Ch
 VIDMEM      equ 0b800h
 SCREENW     equ 80
 SCREENH     equ 25
-WINCOND     equ 10
+WINCOND     equ 5
 BGCOLOR     equ 0020h
 SNAKECOLOR  equ 2020h
 APPLECOLOR  equ 4020h
@@ -43,6 +43,10 @@ game_setup:
     mov ax, [playerY]
     mov word [SNAKEARRAYY], ax
 
+    ; Hide annoying blinking cursor
+    mov ah, 02h
+    mov dx, 2600 ; DH is row, DL is column 
+    int 10h
 
 game_loop:
 
@@ -52,7 +56,6 @@ game_loop:
     mov cx, SCREENW * SCREENH
     rep stosw       ; mov [ES:DI], AX and inc di
 
-    
     ; Draw Snake 
     xor bx, bx
     mov cx, [snakeLength]
@@ -126,15 +129,6 @@ game_loop:
 
     mov ax, [playerY]
     mov word [SNAKEARRAYY], ax
-
-    ; Redraw delay
-    delay_loop:
-    mov bx, [TIMER]
-    inc bx
-    inc bx
-    .delay:
-        cmp [TIMER], bx
-        jl .delay
 
     ; Lose conditions
 
@@ -213,14 +207,75 @@ game_loop:
             mov bl, RIGHT
             jmp check_apple
 
-        ; Check if player hit an apple
-        check_apple:
-            mov byte [direction], bl
+   ; Check if player hit an apple
+    check_apple:
+        mov byte [direction], bl
+
+        mov ax, [playerX]
+        cmp ax, [appleX]
+        jne delay_loop
+
+        mov ax, [playerY]
+        cmp ax, [appleY]
+        jne delay_loop
+
+        inc word [snakeLength]
+        cmp word [snakeLength], WINCOND
+        je game_won
+
+    ; New apple if did not win
+    new_apple:
+        ; Random X position 
+        xor ah, ah
+        int 1Ah          ; Timer ticks in CX:DX
+        mov ax, dx       ; Lower half of timer ticks
+        xor dx, dx       ; Clear out upper half of ticks
+        mov cx, SCREENW
+        div cx           ; AX = quotient, DX = remainder (0-79) 
+        mov word [appleX], dx
+
+        ; Random Y position
+        xor ah, ah
+        int 1Ah          ; Timer ticks in CX:DX
+        mov ax, dx       ; Lower half of timer ticks
+        xor dx, dx       ; Clear out upper half of ticks
+        mov cx, SCREENH
+        div cx           ; AX = quotient, DX = remainder (0-24) 
+        mov word [appleY], dx
+
+    ; Check if apple spawned on the snake
+    xor bx, bx
+    mov cx, [snakeLength]
+    check_apple_on_snake:
+        mov ax, [appleX]
+        cmp ax, [SNAKEARRAYX+bx]
+        jne .increment
+
+        mov ax, [appleY]
+        cmp ax, [SNAKEARRAYY+bx]
+        je new_apple
+
+        .increment:
+            inc bx
+            inc bx
+    loop check_apple_on_snake
+        
+    ; Redraw delay
+    delay_loop:
+    mov bx, [TIMER]
+    inc bx
+    inc bx
+    .delay:
+        cmp [TIMER], bx
+        jl .delay
+
 
 jmp game_loop
 
 ; End conditions
 game_won:
+    mov dword [ES:0000], 0f490f57h
+    mov dword [ES:0004], 0f210f4eh
     jmp reset
 
 game_over:
@@ -233,7 +288,7 @@ game_over:
 
 reset:
     xor ah, ah
-    int 16h
+    int 16h  ; Gets keyboard input
 
     int 19h  ; Reboots qemu
 
