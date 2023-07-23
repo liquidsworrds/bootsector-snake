@@ -1,4 +1,4 @@
-org 0x7C00
+org 7C00h
 
 jmp game_setup
 
@@ -7,7 +7,7 @@ TIMER       equ 046Ch
 VIDMEM      equ 0b800h
 SCREENW     equ 80
 SCREENH     equ 25
-WINCOND     equ 5
+WINCOND     equ 10
 BGCOLOR     equ 0020h
 SNAKECOLOR  equ 2020h
 APPLECOLOR  equ 4020h
@@ -17,7 +17,6 @@ UP          equ 0
 DOWN        equ 1
 LEFT        equ 2
 RIGHT       equ 3
-TOP         equ -1
 
 ; Variables
 playerX:     dw 40
