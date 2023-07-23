@@ -3,27 +3,28 @@ org 0x7C00
 jmp game_setup
 
 ; Constants
-TIMER       equ 0x046C
-VIDMEM      equ 0xb800
+TIMER       equ 046Ch
+VIDMEM      equ 0b800h
 SCREENW     equ 80
 SCREENH     equ 25
 WINCOND     equ 10
-BGCOLOR     equ 0x0020
-SNAKECOLOR  equ 0x2020
-APPLECOLOR  equ 0x4020
-SNAKEARRAYX equ 0x1000
-SNAKEARRAYY equ 0x2000
+BGCOLOR     equ 0020h
+SNAKECOLOR  equ 2020h
+APPLECOLOR  equ 4020h
+SNAKEARRAYX equ 1000h
+SNAKEARRAYY equ 2000h
 UP          equ 0
 DOWN        equ 1
 LEFT        equ 2
 RIGHT       equ 3
+TOP         equ -1
 
 ; Variables
 playerX:     dw 40
 playerY:     dw 12
 appleX:      dw 16
 appleY:      dw 8
-direction:   db 3
+direction:   db 4
 snakeLength: dw 1
 
 ; Game
@@ -31,8 +32,8 @@ snakeLength: dw 1
 game_setup:
 
     ; VGA mode
-    mov ax, 0x003
-    int 0x10
+    mov ax, 0003h
+    int 10h
 
     mov ax, VIDMEM
     mov es, ax      ; ES:DI <- video memory
@@ -117,7 +118,7 @@ game_loop:
 
                 dec bx
                 dec bx
-            jne .snake_update_loop           ; Stops at head
+            jne .snake_update_loop            ; Stops at head
 
     ; Storing updated values of head to SNAKEARRAY
     mov ax, [playerX]
@@ -135,10 +136,107 @@ game_loop:
         cmp [TIMER], bx
         jl .delay
 
+    ; Lose conditions
+
+    ; 1. Hit borders of the screen
+    cmp word [playerY], -1
+    je game_over
+
+    cmp word [playerY], SCREENH ; screen rows are 0-24 
+    je game_over
+
+    cmp word [playerX], -1
+    je game_over
+
+    cmp word [playerX], SCREENW
+    je game_over
+
+    ; 2. Snake hits itself
+    cmp word [snakeLength], 1
+    je get_player_input
+
+    mov bx, 2             ; Start from 2nd segment
+    mov cx, [snakeLength] ; Loop counter
+
+    check_if_snake_hit_itself:
+    mov ax, [playerX]
+    cmp ax, [SNAKEARRAYX+bx]
+    jne .increment
+
+    mov ax, [playerY]
+    cmp ax, [SNAKEARRAYY+bx]
+    je game_over
+
+    .increment:           ; Increment bx to check the next segment
+        inc bx
+        inc bx
+    loop check_if_snake_hit_itself
+        
+    ; Player input
+    get_player_input:
+        mov bl, [direction]
+        
+        mov ah, 1
+        int 16h
+        jz check_apple
+        
+        xor ah, ah
+        int 16h ; ah has the scancode and al has the ascii char
+
+        cmp al, 'h'
+        je h_pressed
+
+        cmp al, 'j'
+        je j_pressed
+
+        cmp al, 'k' 
+        je k_pressed
+
+        cmp al, 'l'
+        je l_pressed
+
+        jmp check_apple
+
+        h_pressed:
+            mov bl, LEFT
+            jmp check_apple
+
+        j_pressed:
+            mov bl, DOWN
+            jmp check_apple
+
+        k_pressed:
+            mov bl, UP
+            jmp check_apple
+
+        l_pressed:
+            mov bl, RIGHT
+            jmp check_apple
+
+        ; Check if player hit an apple
+        check_apple:
+            mov byte [direction], bl
 
 jmp game_loop
 
+; End conditions
+game_won:
+    jmp reset
+
+game_over:
+
+    mov dword [ES:0000], 0f410f47h  
+    mov dword [ES:0004], 0f450f4dh
+    mov dword [ES:0008], 00000000h ; There's probably a better way
+    mov dword [ES:0010], 0f560f4fh 
+    mov dword [ES:0014], 0f520f45h
+
+reset:
+    xor ah, ah
+    int 16h
+
+    int 19h  ; Reboots qemu
 
 ; Bootsector
 times 510 - ($-$$) db 0
-dw 0xaa55
+dw 0aa55h
