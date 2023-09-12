@@ -7,7 +7,7 @@ TIMER       equ 046Ch
 VIDMEM      equ 0b800h
 SCREENW     equ 80
 SCREENH     equ 25
-WINCOND     equ 10
+WINCOND     equ 25
 BGCOLOR     equ 0020h
 SNAKECOLOR  equ 2020h
 APPLECOLOR  equ 4020h
